@@ -239,7 +239,7 @@ async function runAnalysis() {
     renderStress(total);
     renderVaRChart(portR,varPct);
     renderCorrelation(valid,returns);
-    renderOptimizer(returns,valid);
+    renderOptimizer(returns,valid,weights);
   } catch(e) { showError('Could not fetch data. Check ticker symbols. (e.g. AAPL, SPY, TLT, MSFT)'); console.error(e); }
   setLoading(false);
 }
@@ -351,7 +351,7 @@ function renderCorrelation(positions,returns) {
     </div>`;
 }
 
-function renderOptimizer(returns,positions) {
+function renderOptimizer(returns,positions,weights) {
   const n=returns.length;
   const nSim=3000;
   const rf=0.045/252;
@@ -387,7 +387,21 @@ function renderOptimizer(returns,positions) {
           <span class="ticker-badge">${p.ticker}</span>
           <span style="color:var(--accent)">${(bestWeights[i]*100).toFixed(1)}%</span>
         </div>`).join('')}
-      <div class="opt-row" style="margin-top:0.5rem">
+      <div style="font-size:0.65rem;letter-spacing:0.1em;color:var(--accent3);text-transform:uppercase;margin:0.75rem 0 0.5rem">Current Portfolio</div>
+      <div class="opt-row">
+        <span style="color:var(--muted)">Expected Return (Ann.)</span>
+        <span style="color:var(--accent3)">${(currAnnRet*100).toFixed(1)}%</span>
+      </div>
+      <div class="opt-row">
+        <span style="color:var(--muted)">Volatility (Ann.)</span>
+        <span style="color:var(--accent3)">${(currAnnVol*100).toFixed(1)}%</span>
+      </div>
+      <div class="opt-row">
+        <span style="color:var(--muted)">Current Sharpe</span>
+        <span style="color:var(--accent3)">${((currAnnRet-0.045)/currAnnVol).toFixed(2)}</span>
+      </div>
+      <div style="font-size:0.65rem;letter-spacing:0.1em;color:var(--accent);text-transform:uppercase;margin:0.75rem 0 0.5rem">Optimal Portfolio</div>
+      <div class="opt-row">
         <span style="color:var(--muted)">Optimal Sharpe</span>
         <span style="color:var(--accent)">${bestSharpe.toFixed(2)}</span>
       </div>
