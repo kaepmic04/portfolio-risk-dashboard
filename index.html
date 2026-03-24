@@ -393,6 +393,17 @@ function renderOptimizer(returns,positions,weights) {
     if(sharpe>bestSharpe){bestSharpe=sharpe;bestWeights=w;bestRet=annRet;bestVol=annVol;}
   }
 
+  // Current portfolio metrics – calculate FIRST before rendering HTML
+  const currWeights=weights;
+  const actualPortR=[];
+  for(let d=0;d<returns[0].length;d++){
+    let r=0;
+    for(let a=0;a<n;a++) r+=currWeights[a]*returns[a][d];
+    actualPortR.push(r);
+  }
+  const currAnnRet=mean(actualPortR)*252;
+  const currAnnVol=stdDev(actualPortR)*Math.sqrt(252);
+
   document.getElementById('optimizerContent').innerHTML=`
     <div class="chart-container" style="height:180px"><canvas id="frontierChart"></canvas></div>
     <div class="opt-result" style="margin-top:1rem">
@@ -421,23 +432,6 @@ function renderOptimizer(returns,positions,weights) {
         <span style="color:var(--accent)">${bestSharpe.toFixed(2)}</span>
       </div>
     </div>`;
-
-  // Current portfolio metrics
-  const nDays2=returns[0].length;
-  const currPortR=[];
-  const currWeights=weights;
-  // recalculate with actual passed weights - use equal weight as placeholder for current
-  // actual current portfolio return
-  const actualPortR=[];
-  for(let d=0;d<returns[0].length;d++){
-    let r=0;
-    // we need actual weights - they're passed via closure from runAnalysis
-    // use simData reference point instead - find closest to current
-    for(let a=0;a<n;a++) r+=currWeights[a]*returns[a][d];
-    actualPortR.push(r);
-  }
-  const currAnnRet=mean(actualPortR)*252;
-  const currAnnVol=stdDev(actualPortR)*Math.sqrt(252);
 
   if(charts.frontier) charts.frontier.destroy();
   charts.frontier=new Chart(document.getElementById('frontierChart'),{
