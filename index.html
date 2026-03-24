@@ -396,7 +396,7 @@ function renderOptimizer(returns,positions) {
   // Current portfolio metrics
   const nDays2=returns[0].length;
   const currPortR=[];
-  const currWeights=positions.map((_,i)=>1/n);
+  const currWeights=weights;
   // recalculate with actual passed weights - use equal weight as placeholder for current
   // actual current portfolio return
   const actualPortR=[];
