@@ -240,7 +240,14 @@ async function runAnalysis() {
     renderVaRChart(portR,varPct);
     renderCorrelation(valid,returns);
     renderOptimizer(returns,valid,weights);
-  } catch(e) { showError('Could not fetch data. Check ticker symbols. (e.g. AAPL, SPY, TLT, MSFT)'); console.error(e); }
+  } catch(e) {
+    // Only show error if no data was loaded at all
+    const hasValue = document.getElementById('metricValue').textContent !== '—';
+    if (!hasValue) {
+      showError('Could not fetch data. Check ticker symbols. (e.g. AAPL, SPY, TLT, MSFT)');
+    }
+    console.error(e);
+  }
   setLoading(false);
 }
 
@@ -316,6 +323,10 @@ function renderVaRChart(portR,varPct) {
 }
 
 function renderCorrelation(positions,returns) {
+  if (positions.length < 2) {
+    document.getElementById('corrContent').innerHTML='<div class="empty-state"><div class="big">⊞</div>Add 2+ positions to see correlation</div>';
+    return;
+  }
   const n=positions.length;
   // Compute correlation matrix
   const corr=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>{
@@ -352,6 +363,10 @@ function renderCorrelation(positions,returns) {
 }
 
 function renderOptimizer(returns,positions,weights) {
+  if (positions.length < 2) {
+    document.getElementById('optimizerContent').innerHTML='<div class="empty-state"><div class="big">◎</div>Add 2+ positions to run optimizer</div>';
+    return;
+  }
   const n=returns.length;
   const nSim=3000;
   const rf=0.045/252;
