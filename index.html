@@ -439,7 +439,7 @@ function renderOptimizer(returns,positions,weights) {
     type:'scatter',
     data:{datasets:[
       {label:'Simulated Portfolios',data:simData.map(d=>({x:d.x,y:d.y})),backgroundColor:'rgba(68,136,255,0.25)',pointRadius:2,pointHoverRadius:3},
-      {label:'Current Portfolio',data:[{x:currAnnVol*100,y:currAnnRet*100}],backgroundColor:'#ff4466',pointRadius:7,pointHoverRadius:9,pointStyle:'circle'},
+      {label:'Current Portfolio',data:[{x:currAnnVol*100,y:currAnnRet*100}],backgroundColor:'#ff4466',pointRadius:7,pointHoverRadius:9,pointStyle:'circle', order:0},
       {label:'Max Sharpe (Optimal)',data:[{x:bestVol*100,y:bestRet*100}],backgroundColor:'#00ff88',pointRadius:6,pointHoverRadius:8}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
