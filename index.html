@@ -542,22 +542,24 @@ function removePosition(i) {
   renderInputs();
 }
 
-// --- Fetch price data via Financial Modeling Prep API ----
-const FMP_KEY = 'ct2evFHXiBf5IvnvziHlJjpTwaHebb5p';
+// --- Fetch price data via Massive (Polygon.io) API -------
+const MASSIVE_KEY = 'fOHSG_bfCJrCF86aOdVzAEp8GNIq5XxK';
 
 async function fetchYahooData(ticker) {
-  const url = `https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?timeseries=252&apikey=${FMP_KEY}`;
+  const to = new Date().toISOString().split('T')[0];
+  const from = new Date(Date.now() - 365*24*60*60*1000).toISOString().split('T')[0];
+  const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${from}/${to}?adjusted=true&sort=asc&limit=365&apiKey=${MASSIVE_KEY}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch ${ticker}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${ticker}: ${res.status}`);
   const data = await res.json();
-  if (!data.historical || data.historical.length === 0) {
+  if (!data.results || data.results.length === 0) {
     throw new Error(`No data for ${ticker}`);
   }
-  const historical = [...data.historical].reverse();
-  const closes = historical.map(d => d.close);
-  const timestamps = historical.map(d => new Date(d.date).getTime() / 1000);
+  const closes = data.results.map(d => d.c);
+  const timestamps = data.results.map(d => d.t / 1000);
   return { closes, timestamps, ticker };
 }
+
 
 
 // ─── Main analysis ────────────────────────────────────────
