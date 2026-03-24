@@ -542,42 +542,23 @@ function removePosition(i) {
   renderInputs();
 }
 
-// ─── Fetch price data via Yahoo Finance (with fallback proxies) ─
+// --- Fetch price data via Financial Modeling Prep API ----
+const FMP_KEY = 'ct2evFHXiBf5IvnvziHlJjpTwaHebb5p';
+
 async function fetchYahooData(ticker) {
-  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1y`;
-
-  const proxies = [
-    `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
-    `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`,
-  ];
-
-  let lastError = null;
-
-  for (const proxy of proxies) {
-    try {
-      const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) continue;
-      const raw = await res.json();
-
-      // allorigins wraps in .contents, corsproxy returns directly
-      const parsed = raw.contents ? JSON.parse(raw.contents) : raw;
-      const result = parsed.chart.result[0];
-      const closes = result.indicators.quote[0].close.map(v => v ?? null);
-      const timestamps = result.timestamp;
-
-      // Filter out null closes
-      const filtered = closes.map((c, i) => ({ c, t: timestamps[i] })).filter(x => x.c !== null);
-      return {
-        closes: filtered.map(x => x.c),
-        timestamps: filtered.map(x => x.t),
-        ticker
-      };
-    } catch (e) {
-      lastError = e;
-    }
+  const url = `https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?timeseries=252&apikey=${FMP_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch ${ticker}`);
+  const data = await res.json();
+  if (!data.historical || data.historical.length === 0) {
+    throw new Error(`No data for ${ticker}`);
   }
-  throw lastError || new Error(`Failed to fetch ${ticker}`);
+  const historical = [...data.historical].reverse();
+  const closes = historical.map(d => d.close);
+  const timestamps = historical.map(d => new Date(d.date).getTime() / 1000);
+  return { closes, timestamps, ticker };
 }
+
 
 // ─── Main analysis ────────────────────────────────────────
 async function runAnalysis() {
