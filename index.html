@@ -433,6 +433,7 @@ function renderOptimizer(returns,positions,weights) {
       </div>
     </div>`;
 
+  setTimeout(() => {
   if(charts.frontier) charts.frontier.destroy();
   charts.frontier=new Chart(document.getElementById('frontierChart'),{
     type:'scatter',
@@ -448,6 +449,7 @@ function renderOptimizer(returns,positions,weights) {
         y:{title:{display:true,text:'Return (%)',color:'#666680',font:{family:'DM Mono',size:10}},grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:9}},border:{display:false}}
       }}
   });
+  }, 50);
 }
 
 function setLoading(a) { document.getElementById('loading').className='loading'+(a?' active':''); document.querySelector('.run-btn').disabled=a; }
