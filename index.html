@@ -542,17 +542,41 @@ function removePosition(i) {
   renderInputs();
 }
 
-// ─── Fetch price data via Yahoo Finance (allorigins proxy) ─
+// ─── Fetch price data via Yahoo Finance (with fallback proxies) ─
 async function fetchYahooData(ticker) {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1y`;
-  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-  const res = await fetch(proxy);
-  const data = await res.json();
-  const parsed = JSON.parse(data.contents);
-  const result = parsed.chart.result[0];
-  const closes = result.indicators.quote[0].close;
-  const timestamps = result.timestamp;
-  return { closes, timestamps, ticker };
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1y`;
+
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`,
+  ];
+
+  let lastError = null;
+
+  for (const proxy of proxies) {
+    try {
+      const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const raw = await res.json();
+
+      // allorigins wraps in .contents, corsproxy returns directly
+      const parsed = raw.contents ? JSON.parse(raw.contents) : raw;
+      const result = parsed.chart.result[0];
+      const closes = result.indicators.quote[0].close.map(v => v ?? null);
+      const timestamps = result.timestamp;
+
+      // Filter out null closes
+      const filtered = closes.map((c, i) => ({ c, t: timestamps[i] })).filter(x => x.c !== null);
+      return {
+        closes: filtered.map(x => x.c),
+        timestamps: filtered.map(x => x.t),
+        ticker
+      };
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError || new Error(`Failed to fetch ${ticker}`);
 }
 
 // ─── Main analysis ────────────────────────────────────────
