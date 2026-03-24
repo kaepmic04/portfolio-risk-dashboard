@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portfolio Risk Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='12' fill='%230a0a0f'/><polyline points='10,70 30,40 50,55 70,25 90,35' fill='none' stroke='%2300ff88' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -84,6 +85,23 @@
   .corr-table th { color: var(--muted); font-size: 0.65rem; letter-spacing: 0.05em; }
   .opt-result { display: grid; gap: 0.5rem; font-size: 0.8rem; }
   .opt-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(42,42,58,0.5); }
+
+  .signature {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: fadeUp 0.6s 0.6s ease both;
+  }
+  .sig-left { display: flex; flex-direction: column; gap: 0.2rem; }
+  .sig-name { font-family: var(--display); font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .sig-title { font-size: 0.65rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
+  .sig-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+  .sig-tag { font-size: 0.65rem; letter-spacing: 0.1em; color: var(--accent); text-transform: uppercase; }
+  .sig-built { font-size: 0.65rem; color: var(--muted); }
+  .sig-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); display: inline-block; margin-right: 0.4rem; }
 </style>
 </head>
 <body>
@@ -127,6 +145,17 @@
     <div class="panel"><div class="panel-title">// Correlation Matrix</div><div id="corrContent"><div class="empty-state"><div class="big">⊞</div>Correlation matrix will appear here</div></div></div>
     <div class="panel"><div class="panel-title">// Portfolio Optimizer (Efficient Frontier)</div><div id="optimizerContent"><div class="empty-state"><div class="big">◎</div>Optimizer will appear here</div></div></div>
   </div>
+  <div class="signature">
+    <div class="sig-left">
+      <div class="sig-name">Michel Käppler</div>
+      <div class="sig-title">Finance &amp; Capital Markets</div>
+    </div>
+    <div class="sig-right">
+      <div class="sig-tag"><span class="sig-dot"></span>Portfolio Risk Dashboard</div>
+      <div class="sig-built">Built with Python · JavaScript · Polygon.io API</div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -364,15 +393,33 @@ function renderOptimizer(returns,positions) {
       </div>
     </div>`;
 
+  // Current portfolio metrics
+  const nDays2=returns[0].length;
+  const currPortR=[];
+  const currWeights=positions.map((_,i)=>1/n);
+  // recalculate with actual passed weights - use equal weight as placeholder for current
+  // actual current portfolio return
+  const actualPortR=[];
+  for(let d=0;d<returns[0].length;d++){
+    let r=0;
+    // we need actual weights - they're passed via closure from runAnalysis
+    // use simData reference point instead - find closest to current
+    for(let a=0;a<n;a++) r+=currWeights[a]*returns[a][d];
+    actualPortR.push(r);
+  }
+  const currAnnRet=mean(actualPortR)*252;
+  const currAnnVol=stdDev(actualPortR)*Math.sqrt(252);
+
   if(charts.frontier) charts.frontier.destroy();
   charts.frontier=new Chart(document.getElementById('frontierChart'),{
     type:'scatter',
     data:{datasets:[
-      {label:'Portfolios',data:simData.map(d=>({x:d.x,y:d.y})),backgroundColor:'rgba(68,136,255,0.3)',pointRadius:2,pointHoverRadius:3},
-      {label:'Optimal',data:[{x:bestVol*100,y:bestRet*100}],backgroundColor:'#00ff88',pointRadius:8,pointHoverRadius:10}
+      {label:'Simulated Portfolios',data:simData.map(d=>({x:d.x,y:d.y})),backgroundColor:'rgba(68,136,255,0.25)',pointRadius:2,pointHoverRadius:3},
+      {label:'Current Portfolio',data:[{x:currAnnVol*100,y:currAnnRet*100}],backgroundColor:'#ff4466',pointRadius:7,pointHoverRadius:9,pointStyle:'triangle'},
+      {label:'Max Sharpe (Optimal)',data:[{x:bestVol*100,y:bestRet*100}],backgroundColor:'#00ff88',pointRadius:6,pointHoverRadius:8}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` Vol: ${ctx.parsed.x.toFixed(1)}% | Ret: ${ctx.parsed.y.toFixed(1)}%`},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:'#00ff88'}},
+      plugins:{legend:{display:true,labels:{color:'#666680',font:{family:'DM Mono',size:9},boxWidth:8,padding:12}},tooltip:{callbacks:{label:ctx=>` Vol: ${ctx.parsed.x.toFixed(1)}% | Ret: ${ctx.parsed.y.toFixed(1)}%`},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:'#00ff88'}},
       scales:{
         x:{title:{display:true,text:'Volatility (%)',color:'#666680',font:{family:'DM Mono',size:10}},grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:9}},border:{display:false}},
         y:{title:{display:true,text:'Return (%)',color:'#666680',font:{family:'DM Mono',size:10}},grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:9}},border:{display:false}}
