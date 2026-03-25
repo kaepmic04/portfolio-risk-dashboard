@@ -114,6 +114,11 @@
 
   <div class="input-section">
     <div class="input-label">// Portfolio Positions</div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:1rem;line-height:1.6;">
+      Enter <strong style="color:var(--text)">US stock tickers</strong> (e.g. AAPL, SPY, TLT, MSFT, GOOGL) and number of shares. 
+      Data is sourced from <strong style="color:var(--text)">Polygon.io</strong> and reflects prior trading day closing prices.
+      Correlation matrix and optimizer require <strong style="color:var(--text)">2+ positions</strong>.
+    </div>
     <div class="positions-grid" id="positionsGrid"></div>
     <div class="input-actions">
       <button class="add-btn" onclick="addPosition()">+ Add Position</button>
@@ -238,6 +243,7 @@ async function runAnalysis() {
     renderPerfChart(aligned,weights,nDays);
     renderStress(total);
     renderVaRChart(portR,varPct);
+    renderMethod(varPct, varDollar, total, annVol, nDays);
     renderCorrelation(valid,returns);
     renderOptimizer(returns,valid,weights);
   } catch(e) {
@@ -287,7 +293,7 @@ function renderPerfChart(aligned,weights,nDays) {
       pointRadius:0,tension:0.3}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
       tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(2)}%`},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:color}},
-      scales:{x:{display:false},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:10},callback:v=>v.toFixed(0)+'%'},border:{display:false}}}}
+      scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:10},callback:v=>v.toFixed(0)+'%'},border:{display:false}}}}
   });
 }
 
@@ -318,7 +324,7 @@ function renderVaRChart(portR,varPct) {
     data:{labels,datasets:[{data:bins,backgroundColor:colors,borderWidth:0}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
       tooltip:{callbacks:{title:ctx=>`Return: ${ctx[0].label}`,label:ctx=>`Days: ${ctx.parsed.y}`},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:'#00ff88'}},
-      scales:{x:{display:false},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:9}},border:{display:false}}}}
+      scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:9}},border:{display:false}}}}
   });
 }
 
@@ -438,9 +444,9 @@ function renderOptimizer(returns,positions,weights) {
   charts.frontier=new Chart(document.getElementById('frontierChart'),{
     type:'scatter',
     data:{datasets:[
-      {label:'Simulated Portfolios',data:simData.map(d=>({x:d.x,y:d.y})),backgroundColor:'rgba(68,136,255,0.25)',pointRadius:1.5,pointHoverRadius:2, order:1},
-      {label:'Current Portfolio',data:[{x:currAnnVol*100,y:currAnnRet*100}],backgroundColor:'#ff4466',pointRadius:6,pointHoverRadius:8,pointStyle:'circle', order:0},
-      {label:'Max Sharpe (Optimal)',data:[{x:bestVol*100,y:bestRet*100}],backgroundColor:'#00ff88',pointRadius:6,pointHoverRadius:8}
+      {label:'Simulated Portfolios',data:simData.map(d=>({x:d.x,y:d.y})),backgroundColor:'rgba(68,136,255,0.25)',pointRadius:2,pointHoverRadius:3},
+      {label:'Max Sharpe (Optimal)',data:[{x:bestVol*100,y:bestRet*100}],backgroundColor:'#00ff88',pointRadius:7,pointHoverRadius:9},
+      {label:'Current Portfolio',data:[{x:currAnnVol*100,y:currAnnRet*100}],backgroundColor:'#ff4466',borderColor:'#ff4466',pointRadius:9,pointHoverRadius:11,pointStyle:'circle',order:0}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,labels:{color:'#666680',font:{family:'DM Mono',size:9},boxWidth:8,padding:12}},tooltip:{callbacks:{label:ctx=>` Vol: ${ctx.parsed.x.toFixed(1)}% | Ret: ${ctx.parsed.y.toFixed(1)}%`},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:'#00ff88'}},
@@ -450,6 +456,57 @@ function renderOptimizer(returns,positions,weights) {
       }}
   });
   }, 50);
+}
+
+function renderMethod(varPct, varDollar, totalValue, annVol, nObs) {
+  const dailyVol = annVol / Math.sqrt(252);
+  const paramVaR = 1.645 * dailyVol * totalValue;
+  const today = new Date();
+  const oneYearAgo = new Date(today - 365*24*60*60*1000);
+  const fmt = d => d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+
+  document.getElementById('methodContent').innerHTML = `
+    <div style="display:grid;gap:0.6rem;">
+      <div style="font-size:0.62rem;letter-spacing:0.12em;color:var(--accent);text-transform:uppercase;margin-bottom:0.25rem">Data Source</div>
+      <div style="display:flex;justify-content:space-between;padding-bottom:0.4rem;border-bottom:1px solid var(--border)">
+        <span>Provider</span><span style="color:var(--text)">Polygon.io</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Universe</span><span style="color:var(--text)">US Equities & ETFs</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Period</span><span style="color:var(--text)">${fmt(oneYearAgo)} – ${fmt(today)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Observations</span><span style="color:var(--text)">${nObs} trading days</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Price Type</span><span style="color:var(--text)">Adjusted Close (EOD)</span>
+      </div>
+
+      <div style="font-size:0.62rem;letter-spacing:0.12em;color:var(--accent);text-transform:uppercase;margin-top:0.5rem;margin-bottom:0.25rem">VaR Methodology</div>
+      <div style="display:flex;justify-content:space-between;padding-bottom:0.4rem;border-bottom:1px solid var(--border)">
+        <span>Method</span><span style="color:var(--text)">Historical Simulation</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Confidence Level</span><span style="color:var(--text)">95%</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Holding Period</span><span style="color:var(--text)">1 day</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Historical VaR</span><span class="negative">-$${varDollar.toLocaleString('en-US',{maximumFractionDigits:0})}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Parametric VaR</span><span class="negative">-$${paramVaR.toLocaleString('en-US',{maximumFractionDigits:0})}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>Daily Volatility</span><span style="color:var(--accent3)">${(dailyVol*100).toFixed(2)}%</span>
+      </div>
+      <div style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border);font-size:0.7rem;color:var(--muted);line-height:1.6;">
+        VaR is exceeded on ~${Math.round(nObs*0.05)} days/year. It does not predict the magnitude of losses beyond the threshold — for that, see CVaR (Expected Shortfall).
+      </div>
+    </div>`;
 }
 
 function setLoading(a) { document.getElementById('loading').className='loading'+(a?' active':''); document.querySelector('.run-btn').disabled=a; }
