@@ -244,10 +244,9 @@ async function runAnalysis() {
     renderStress(total);
     renderVaRChart(portR,varPct);
     renderMethod(varPct, varDollar, total, annVol, nDays);
-    renderCorrelation(valid,returns);
-    renderOptimizer(returns,valid,weights);
+    try { renderCorrelation(valid,returns); } catch(e2) { console.error('Corr error:',e2); }
+    try { renderOptimizer(returns,valid,weights); } catch(e3) { console.error('Opt error:',e3); }
   } catch(e) {
-    // Only show error if no data was loaded at all
     const hasValue = document.getElementById('metricValue').textContent !== '—';
     if (!hasValue) {
       showError('Could not fetch data. Check ticker symbols. (e.g. AAPL, SPY, TLT, MSFT)');
@@ -290,8 +289,8 @@ function renderPerfChart(aligned,weights,nDays) {
     type:'line',
     data:{labels:['Start',...labels],datasets:[{data:pctData,borderColor:color,borderWidth:2,fill:true,
       backgroundColor:function(ctx){var g=ctx.chart.ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,color+'33');g.addColorStop(1,color+'00');return g;},
-      pointRadius:0,tension:0.3}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:function(ctx){return ctx[0].label;},label:function(ctx){return 'Return: '+ctx.parsed.y.toFixed(2)+'%';}},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:color}},scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:10},callback:function(v){return v.toFixed(0)+'%';}},border:{display:false}}}}
+      pointRadius:0,tension:0.3,pointHitRadius:20}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:function(ctx){return ctx[0].label;},label:function(ctx){return 'Cumulative Return since start: '+ctx.parsed.y.toFixed(2)+'%';}},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:color}},scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:10},callback:function(v){return v.toFixed(0)+'%';}},border:{display:false}}}}
   });
 }
 
