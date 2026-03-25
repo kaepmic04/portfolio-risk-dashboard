@@ -277,7 +277,7 @@ function renderHoldings(positions,prices,values,total,weights,returns) {
 function renderPerfChart(aligned,weights,nDays) {
   document.getElementById('chartContent').innerHTML='<div class="chart-container"><canvas id="perfChart"></canvas></div>';
   const assetR=aligned.map(r=>getReturns(r.closes));
-  const labels=aligned[0].timestamps.slice(1).map(t=>new Date(t*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  const labels=aligned[0].timestamps.slice(1).map(t=>new Date(t*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}));
   let cum=1; const portCum=[1];
   for(let d=0;d<nDays;d++){
     let r=0; for(let a=0;a<assetR.length;a++) r+=weights[a]*assetR[a][d];
@@ -292,8 +292,8 @@ function renderPerfChart(aligned,weights,nDays) {
       backgroundColor:(ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,color+'33');g.addColorStop(1,color+'00');return g;},
       pointRadius:0,tension:0.3}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
-      tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(2)}%`},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:color}},
-      scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:10},callback:v=>v.toFixed(0)+'%'},border:{display:false}}}}
+      tooltip:{callbacks:{title:function(ctx){return ctx[0].label;},label:function(ctx){return ' Return: '+ctx.parsed.y.toFixed(2)+'%';}},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:color,padding:10},
+      scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0,callback:function(val,idx){return this.getLabelForValue(val);}},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:10},callback:v=>v.toFixed(0)+'%'},border:{display:false}}}}
   });
 }
 
@@ -324,7 +324,7 @@ function renderVaRChart(portR,varPct) {
     data:{labels,datasets:[{data:bins,backgroundColor:colors,borderWidth:0}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
       tooltip:{callbacks:{title:ctx=>`Return: ${ctx[0].label}`,label:ctx=>`Days: ${ctx.parsed.y}`},backgroundColor:'#1a1a24',borderColor:'#2a2a3a',borderWidth:1,titleColor:'#e8e8f0',bodyColor:'#00ff88'}},
-      scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:9}},border:{display:false}}}}
+      scales:{x:{display:true,ticks:{color:'#666680',font:{family:'DM Mono',size:9},maxTicksLimit:6,maxRotation:0,callback:function(val,idx){return this.getLabelForValue(val);}},grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(42,42,58,0.5)'},ticks:{color:'#666680',font:{family:'DM Mono',size:9}},border:{display:false}}}}
   });
 }
 
